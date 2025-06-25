@@ -4,8 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-
-use function Pest\Laravel\json;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -25,10 +24,41 @@ class AuthController extends Controller
 
         $token = $user->createToken($request->name)->plainTextToken;
 
+        return response()->json([
+            'message' => 'User created successfully',
+            'user' => $user,
+            'token' => $token
+        ]);
+    }
+
+    /**
+     * Login a user
+     * @param Request $request
+     * @param User $user
+     */
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string|email|max:255|exists:users',
+            'password' => 'required',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'User created successfully',
-                'user' => $user,
-                'token' => $token
-            ]);
+                'message' => 'Invalid credentials',
+                'status' => false
+            ], 401);
         }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login successful',
+            'status' => true,
+            'token' => $token,
+            'user' => $user
+        ]);
+    }
 }
