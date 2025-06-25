@@ -51,4 +51,56 @@ class ProductController extends Controller
             'product' => ProductResource::make($product),
         ]);
     }
+
+    /**
+     * Update a product
+     * @param Request $request
+     * @param Product $product
+     * @return JsonResponse
+     */
+    public function update(Request $request, string $uuid): JsonResponse
+    {
+        $product = Product::where('uuid', $uuid)->first();
+        $user = auth('sanctum')->user();
+        
+        if (!$product || $product->user_id !== $user->id) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+        
+        $fields = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string', 'max:255'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'quantity' => ['required', 'integer', 'min:0']
+        ]);
+        
+        $product->update($fields);
+        
+        return response()->json([
+            'message' => 'Product updated successfully',
+            'product' => ProductResource::make($product),
+        ]);
+    }
+
+    /**
+     * Delete a product
+     * @param Product $product
+     * @param string $uuid
+     * @return JsonResponse
+     */
+    public function destroy(string $uuid): JsonResponse
+    {
+        $product = Product::where('uuid', $uuid)->first();
+        $user = auth('sanctum')->user();
+
+        if (!$product || $product->user_id !== $user->id) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        $product->delete();
+
+        return response()->json([
+            'message' => 'Product deleted successfully',
+        ]);
+    }
 }
