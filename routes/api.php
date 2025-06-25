@@ -17,5 +17,5 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 
 // API for Products
 Route::group(['prefix' => 'v1', 'as' => 'v1'], function () {
-    Route::apiResource('/products', ProductController::class);
-})->middleware('auth:sanctum');
+    Route::apiResource('/products', ProductController::class)->middleware('auth:sanctum');
+});
