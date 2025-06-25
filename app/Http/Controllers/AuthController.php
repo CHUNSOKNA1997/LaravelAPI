@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -11,8 +12,9 @@ class AuthController extends Controller
     /**
      * Register a new user
      * @param Request $request
+     * @return JsonResponse
      */
-    public function register(Request $request)
+    public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -34,9 +36,9 @@ class AuthController extends Controller
     /**
      * Login a user
      * @param Request $request
-     * @param User $user
+     * @return JsonResponse
      */
-    public function login(Request $request)
+    public function login(Request $request): JsonResponse
     {
         $request->validate([
             'email' => 'required|string|email|max:255|exists:users',
@@ -64,9 +66,10 @@ class AuthController extends Controller
 
     /**
      * Logout a user
-     * @param Request $request
+     * @param Request $request\
+     * @return JsonResponse
      */
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
         $user = $request->user();
 
