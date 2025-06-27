@@ -18,6 +18,7 @@ class ProductController extends Controller
         $user = auth('sanctum')->user();
         $products = Product::where('user_id', $user->id)->get();
         return response()->json([
+            'message' => 'Products retrieved successfully',
             'products' => ProductResource::collection($products),
         ]);
     }
