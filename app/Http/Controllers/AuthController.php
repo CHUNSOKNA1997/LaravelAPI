@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -16,21 +17,32 @@ class AuthController extends Controller
      */
     public function register(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        try {
+            DB::beginTransaction();
 
-        $user = User::create($validated);
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
 
-        $token = $user->createToken($request->name)->plainTextToken;
+            $user = User::create($validated);
+            $token = $user->createToken($request->name)->plainTextToken;
+            
+            DB::commit();
 
-        return response()->json([
-            'message' => 'User created successfully',
-            'user' => $user,
-            'token' => $token
-        ]);
+            return response()->json([
+                'message' => 'User created successfully',
+                'user' => $user,
+                'token' => $token
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack(); 
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
     }
 
     /**
@@ -40,28 +52,48 @@ class AuthController extends Controller
      */
     public function login(Request $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|string|email|max:255|exists:users',
-            'password' => 'required',
-        ]);
+        try {
+            $validated = $request->validate([
+                'email' => 'required|string|email|max:255|exists:users',
+                'password' => 'required|string',
+            ]);
+    
+            $user = User::where('email', $validated['email'])->first();
+    
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Authentication failed',
+                    'errors' => [
+                        'email' => ['User not found']
+                    ]
+                ], 404);
+            }
 
-        $user = User::where('email', $request->email)->first();
+            if (!Hash::check($validated['password'], $user->password)) {
+                return response()->json([
+                    'message' => 'Authentication failed',
+                    'errors' => [
+                        'password' => ['Incorrect password']
+                    ]
+                ], 401);
+            }
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+            $token = $user->createToken('auth_token')->plainTextToken;
+
             return response()->json([
-                'message' => 'Invalid credentials',
-                'status' => false
-            ], 401);
+                'message' => 'Login successful',
+                'status' => true,
+                'token' => $token,
+                'user' => $user
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
         }
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Login successful',
-            'status' => true,
-            'token' => $token,
-            'user' => $user
-        ]);
     }
 
     /**
