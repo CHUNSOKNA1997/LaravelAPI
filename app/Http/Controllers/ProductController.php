@@ -54,6 +54,26 @@ class ProductController extends Controller
     }
 
     /**
+     * Show a specific product
+     * @param string $uuid
+     * @return JsonResponse
+     */
+    public function show(string $uuid): JsonResponse
+    {
+        $product = Product::where('uuid', $uuid)->first();
+        $user = auth('sanctum')->user();
+
+        if (!$product || $product->user_id !== $user->id) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        return response()->json([
+            'message' => 'Product retrieved successfully',
+            'product' => ProductResource::make($product),
+        ]);
+    }
+
+    /**
      * Update a product
      * @param Request $request
      * @param Product $product
